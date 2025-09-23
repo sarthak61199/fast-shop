@@ -1,5 +1,8 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
+import { logger } from "hono/logger";
 
 import addressController from "./controllers/address.js";
 import authController from "./controllers/auth.js";
@@ -10,6 +13,10 @@ import productController from "./controllers/product.js";
 import userController from "./controllers/user.js";
 
 const app = new Hono().basePath("/api/v1");
+
+app.use(logger());
+app.use(cors());
+app.use(secureHeaders());
 
 app.get("/health", (c) => {
   return c.json({
