@@ -1,12 +1,18 @@
 import { zValidator } from "@hono/zod-validator";
 import { hash, verify } from "@node-rs/argon2";
+import { randomBytes } from "crypto";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { jwt, sign } from "hono/jwt";
 
 import prisma from "../lib/db.js";
 import { JWT_SECRET } from "../lib/env.js";
-import { loginSchema, registerSchema } from "../schema/auth.js";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "../schema/auth.js";
 
 const authController = new Hono();
 
@@ -23,14 +29,9 @@ authController.post(
     });
 
     if (existingUser) {
-      return c.json(
-        {
-          error: true,
-          message: "User with this email already exists",
-          data: {},
-        },
-        400
-      );
+      throw new HTTPException(400, {
+        message: "User with this email already exists",
+      });
     }
 
     // Hash password
@@ -91,40 +92,25 @@ authController.post("/login", zValidator("json", loginSchema), async (c) => {
   });
 
   if (!user) {
-    return c.json(
-      {
-        error: true,
-        message: "Invalid email or password",
-        data: {},
-      },
-      401
-    );
+    throw new HTTPException(401, {
+      message: "Invalid email or password",
+    });
   }
 
   // Check if user is active
   if (!user.isActive) {
-    return c.json(
-      {
-        error: true,
-        message: "Account is deactivated",
-        data: {},
-      },
-      401
-    );
+    throw new HTTPException(401, {
+      message: "Account is deactivated",
+    });
   }
 
   // Verify password
   const isValidPassword = await verify(user.password, password);
 
   if (!isValidPassword) {
-    return c.json(
-      {
-        error: true,
-        message: "Invalid email or password",
-        data: {},
-      },
-      401
-    );
+    throw new HTTPException(401, {
+      message: "Invalid email or password",
+    });
   }
 
   // Generate JWT token
@@ -202,26 +188,121 @@ authController.post("/refresh", jwt({ secret: JWT_SECRET }), async (c) => {
   });
 });
 
-authController.post("/forgot-password", async (c) => {
-  return c.json(
-    {
-      error: true,
-      message: "Not implemented yet",
-      data: {},
-    },
-    501
-  );
-});
+// Forgot password route
+authController.post(
+  "/forgot-password",
+  zValidator("json", forgotPasswordSchema),
+  async (c) => {
+    const { email } = c.req.valid("json");
 
-authController.post("/reset-password", async (c) => {
-  return c.json(
-    {
-      error: true,
-      message: "Not implemented yet",
+    // Check if user exists (but don't reveal this information)
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      throw new HTTPException(400, {
+        message:
+          "If an account with this email exists, a reset token has been sent.",
+      });
+    }
+
+    // Clean up expired tokens for this user
+    await prisma.passwordResetToken.deleteMany({
+      where: {
+        userId: user.id,
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Generate secure reset token
+    const resetToken = randomBytes(32).toString("hex");
+    const hashedToken = await hash(resetToken);
+
+    // Set expiration to 15 minutes from now
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Create reset token in database
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        expiresAt,
+      },
+    });
+
+    // Log token for development/demo purposes
+    console.log(`🔑 Password reset token for ${email}: ${resetToken}`);
+    console.log(`📧 This token expires at: ${expiresAt.toISOString()}`);
+
+    return c.json({
+      error: false,
+      message:
+        "If an account with this email exists, a reset token has been sent.",
       data: {},
-    },
-    501
-  );
-});
+    });
+  }
+);
+
+// Reset password route
+authController.post(
+  "/reset-password",
+  zValidator("json", resetPasswordSchema),
+  async (c) => {
+    const { token, newPassword } = c.req.valid("json");
+
+    // Find valid reset token
+    const resetTokenRecord = await prisma.passwordResetToken.findFirst({
+      where: {
+        expiresAt: { gt: new Date() },
+        usedAt: null,
+      },
+      include: {
+        user: {
+          select: { id: true, email: true },
+        },
+      },
+    });
+
+    if (!resetTokenRecord) {
+      throw new HTTPException(400, {
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    // Verify the token
+    const isValidToken = await verify(resetTokenRecord.token, token);
+    if (!isValidToken) {
+      throw new HTTPException(400, {
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await hash(newPassword);
+
+    // Update user password in a transaction
+    await prisma.$transaction([
+      // Update password
+      prisma.user.update({
+        where: { id: resetTokenRecord.userId },
+        data: { password: hashedPassword },
+      }),
+      // Mark token as used
+      prisma.passwordResetToken.update({
+        where: { id: resetTokenRecord.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return c.json({
+      error: false,
+      message: "Password has been reset successfully",
+      data: {},
+    });
+  }
+);
 
 export default authController;
