@@ -1,16 +1,59 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    // Target modern Node.js versions
+    "target": "ES2022",
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Enable strict type checking
     "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // ESM and import settings
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "resolveJsonModule": true,
+
+    // Type definitions
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"],
+
+    // JSX settings for Hono
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "outDir": "./dist"
+
+    // Output configuration
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    // Performance and compatibility
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": false,
+
+    // Library support
+    "lib": ["ES2022"],
+
+    // Additional strict checks
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Build optimization (tsup will handle bundling)
+    "isolatedModules": true,
+    "preserveSymlinks": false
   },
-  "exclude": ["node_modules"]
+
+  // Include source files
+  "include": ["src/**/*"],
+
+  // Exclude build artifacts and dependencies
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
