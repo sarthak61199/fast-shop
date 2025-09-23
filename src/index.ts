@@ -1,7 +1,15 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 
-const app = new Hono();
+import addressController from "./controllers/address.js";
+import authController from "./controllers/auth.js";
+import cartController from "./controllers/cart.js";
+import orderController from "./controllers/order.js";
+import paymentController from "./controllers/payment.js";
+import productController from "./controllers/product.js";
+import userController from "./controllers/user.js";
+
+const app = new Hono().basePath("/api/v1");
 
 app.get("/health", (c) => {
   return c.json({
@@ -10,6 +18,14 @@ app.get("/health", (c) => {
     data: {},
   });
 });
+
+app.route("/auth", authController);
+app.route("/products", productController);
+app.route("/orders", orderController);
+app.route("/carts", cartController);
+app.route("/payments", paymentController);
+app.route("/addresses", addressController);
+app.route("/users", userController);
 
 serve(
   {
