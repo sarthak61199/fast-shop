@@ -4,231 +4,255 @@
 
 This document outlines all REST API endpoints for Fast Shop v1, organized by feature area.
 
+### GET /api/v1/health
+Health check endpoint.
+- **Response**: `{ error, message, data: {} }`
+
 ## Authentication & Authorization
 
-### POST /api/auth/register
+### POST /api/v1/auth/register
 Register a new user account.
 - **Body**: `{ email, password, firstName?, lastName? }`
-- **Response**: `{ user, token }`
+- **Response**: `{ error, message, data: { user, token } }`
 
-### POST /api/auth/login
+### POST /api/v1/auth/login
 Authenticate user and return JWT token.
 - **Body**: `{ email, password }`
-- **Response**: `{ user, token }`
+- **Response**: `{ error, message, data: { user, token } }`
 
-### POST /api/auth/refresh
+### POST /api/v1/auth/refresh
 Refresh JWT access token.
 - **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ token }`
+- **Response**: `{ error, message, data: { token } }`
 
-### POST /api/auth/forgot-password
+### POST /api/v1/auth/forgot-password
 Initiate password reset process.
 - **Body**: `{ email }`
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
-### POST /api/auth/reset-password
+### POST /api/v1/auth/reset-password
 Reset password with token.
 - **Body**: `{ token, newPassword }`
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## User Management
 
-### GET /api/users/profile
+### GET /api/v1/users/profile
 Get current user profile.
 - **Auth**: Required
-- **Response**: `{ user }`
+- **Response**: `{ error, message, data: { user } }`
 
-### PUT /api/users/profile
+### PUT /api/v1/users/profile
 Update current user profile.
 - **Auth**: Required
 - **Body**: `{ firstName?, lastName?, email? }`
-- **Response**: `{ user }`
+- **Response**: `{ error, message, data: { user } }`
 
-### GET /api/users/addresses
+## Address Management
+
+### GET /api/v1/addresses
 Get user's addresses.
 - **Auth**: Required
-- **Response**: `{ addresses[] }`
+- **Response**: `{ error, message, data: { addresses[] } }`
 
-### POST /api/users/addresses
+### POST /api/v1/addresses
 Create new address.
 - **Auth**: Required
-- **Body**: `{ type, firstName, lastName, street, city, state, postalCode, country, phone?, isDefault? }`
-- **Response**: `{ address }`
+- **Body**: `{ type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault? }`
+- **Response**: `{ error, message, data: { address } }`
 
-### PUT /api/users/addresses/:id
+### PUT /api/v1/addresses/:id
 Update address.
 - **Auth**: Required
-- **Response**: `{ address }`
+- **Body**: `{ type?, firstName?, lastName?, company?, street?, city?, state?, postalCode?, country?, phone?, isDefault? }`
+- **Response**: `{ error, message, data: { address } }`
 
-### DELETE /api/users/addresses/:id
+### PUT /api/v1/addresses/:id/default
+Set address as default.
+- **Auth**: Required
+- **Response**: `{ error, message, data: { address } }`
+
+### DELETE /api/v1/addresses/:id
 Delete address.
 - **Auth**: Required
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## Product Management
 
-### GET /api/products
+*Note: Product endpoints are planned but not yet implemented.*
+
+### GET /api/v1/products
 Get products with pagination and filtering.
 - **Query**: `page?, limit?, category?, search?, minPrice?, maxPrice?, sort?`
-- **Response**: `{ products[], pagination }`
+- **Response**: `{ error, message, data: { products[], pagination } }`
 
-### GET /api/products/:id
+### GET /api/v1/products/:id
 Get single product details.
-- **Response**: `{ product }`
+- **Response**: `{ error, message, data: { product } }`
 
-### POST /api/products
+### POST /api/v1/products
 Create new product (Admin only).
 - **Auth**: Admin required
 - **Body**: `{ name, description?, price, categoryId, sku?, qty?, images[]?, ... }`
-- **Response**: `{ product }`
+- **Response**: `{ error, message, data: { product } }`
 
-### PUT /api/products/:id
+### PUT /api/v1/products/:id
 Update product (Admin only).
 - **Auth**: Admin required
-- **Response**: `{ product }`
+- **Response**: `{ error, message, data: { product } }`
 
-### DELETE /api/products/:id
+### DELETE /api/v1/products/:id
 Delete product (Admin only).
 - **Auth**: Admin required
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## Category Management
 
-### GET /api/categories
+*Note: Category endpoints are planned but not yet implemented.*
+
+### GET /api/v1/categories
 Get all active categories.
-- **Response**: `{ categories[] }`
+- **Response**: `{ error, message, data: { categories[] } }`
 
-### GET /api/categories/:id
+### GET /api/v1/categories/:id
 Get category with products.
-- **Response**: `{ category, products[] }`
+- **Response**: `{ error, message, data: { category, products[] } }`
 
-### POST /api/categories
+### POST /api/v1/categories
 Create category (Admin only).
 - **Auth**: Admin required
 - **Body**: `{ name, description?, slug?, image? }`
-- **Response**: `{ category }`
+- **Response**: `{ error, message, data: { category } }`
 
-### PUT /api/categories/:id
+### PUT /api/v1/categories/:id
 Update category (Admin only).
 - **Auth**: Admin required
-- **Response**: `{ category }`
+- **Response**: `{ error, message, data: { category } }`
 
-### DELETE /api/categories/:id
+### DELETE /api/v1/categories/:id
 Delete category (Admin only).
 - **Auth**: Admin required
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## Shopping Cart
 
-### GET /api/cart
+*Note: Shopping cart endpoints are planned but not yet implemented.*
+
+### GET /api/v1/carts
 Get current user's cart.
 - **Auth**: Required
-- **Response**: `{ cart, items[], totals }`
+- **Response**: `{ error, message, data: { cart, items[], totals } }`
 
-### POST /api/cart/items
+### POST /api/v1/carts/items
 Add item to cart.
 - **Auth**: Required
 - **Body**: `{ productId, quantity }`
-- **Response**: `{ cart, items[], totals }`
+- **Response**: `{ error, message, data: { cart, items[], totals } }`
 
-### PUT /api/cart/items/:id
+### PUT /api/v1/carts/items/:id
 Update cart item quantity.
 - **Auth**: Required
 - **Body**: `{ quantity }`
-- **Response**: `{ cart, items[], totals }`
+- **Response**: `{ error, message, data: { cart, items[], totals } }`
 
-### DELETE /api/cart/items/:id
+### DELETE /api/v1/carts/items/:id
 Remove item from cart.
 - **Auth**: Required
-- **Response**: `{ cart, items[], totals }`
+- **Response**: `{ error, message, data: { cart, items[], totals } }`
 
-### DELETE /api/cart
+### DELETE /api/v1/carts
 Clear entire cart.
 - **Auth**: Required
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## Order Management
 
-### GET /api/orders
+*Note: Order management endpoints are planned but not yet implemented.*
+
+### GET /api/v1/orders
 Get user's orders with pagination.
 - **Auth**: Required
 - **Query**: `page?, limit?, status?`
-- **Response**: `{ orders[], pagination }`
+- **Response**: `{ error, message, data: { orders[], pagination } }`
 
-### GET /api/orders/:id
+### GET /api/v1/orders/:id
 Get order details.
 - **Auth**: Required (own orders or admin)
-- **Response**: `{ order, items[] }`
+- **Response**: `{ error, message, data: { order, items[] } }`
 
-### POST /api/orders
+### POST /api/v1/orders
 Create order from cart.
 - **Auth**: Required
 - **Body**: `{ shippingAddressId, billingAddressId?, paymentMethodId, notes? }`
-- **Response**: `{ order, items[] }`
+- **Response**: `{ error, message, data: { order, items[] } }`
 
-### PUT /api/orders/:id/status
+### PUT /api/v1/orders/:id/status
 Update order status (Admin only).
 - **Auth**: Admin required
 - **Body**: `{ status }`
-- **Response**: `{ order }`
+- **Response**: `{ error, message, data: { order } }`
 
-### PUT /api/orders/:id/cancel
+### PUT /api/v1/orders/:id/cancel
 Cancel order (if pending).
 - **Auth**: Required (own order)
-- **Response**: `{ order }`
+- **Response**: `{ error, message, data: { order } }`
 
 ## Payment Methods
 
-### GET /api/payment-methods
+*Note: Payment method endpoints are planned but not yet implemented.*
+
+### GET /api/v1/payments
 Get user's payment methods.
 - **Auth**: Required
-- **Response**: `{ paymentMethods[] }`
+- **Response**: `{ error, message, data: { paymentMethods[] } }`
 
-### POST /api/payment-methods
+### POST /api/v1/payments
 Add payment method.
 - **Auth**: Required
 - **Body**: `{ type, provider, cardNumber?, expiryMonth?, expiryYear?, ... }`
-- **Response**: `{ paymentMethod }`
+- **Response**: `{ error, message, data: { paymentMethod } }`
 
-### PUT /api/payment-methods/:id/default
+### PUT /api/v1/payments/:id/default
 Set as default payment method.
 - **Auth**: Required
-- **Response**: `{ paymentMethod }`
+- **Response**: `{ error, message, data: { paymentMethod } }`
 
-### DELETE /api/payment-methods/:id
+### DELETE /api/v1/payments/:id
 Delete payment method.
 - **Auth**: Required
-- **Response**: `{ message }`
+- **Response**: `{ error, message, data: {} }`
 
 ## Admin Dashboard
 
-### GET /api/admin/dashboard
+*Note: Admin dashboard endpoints are planned but not yet implemented.*
+
+### GET /api/v1/admin/dashboard
 Get dashboard analytics.
 - **Auth**: Admin required
-- **Response**: `{ stats: { totalOrders, totalRevenue, totalUsers, totalProducts } }`
+- **Response**: `{ error, message, data: { stats: { totalOrders, totalRevenue, totalUsers, totalProducts } } }`
 
-### GET /api/admin/users
+### GET /api/v1/admin/users
 Get users with pagination (Admin only).
 - **Auth**: Admin required
 - **Query**: `page?, limit?, search?`
-- **Response**: `{ users[], pagination }`
+- **Response**: `{ error, message, data: { users[], pagination } }`
 
-### PUT /api/admin/users/:id/role
+### PUT /api/v1/admin/users/:id/role
 Update user role (Admin only).
 - **Auth**: Admin required
 - **Body**: `{ role }`
-- **Response**: `{ user }`
+- **Response**: `{ error, message, data: { user } }`
 
-### GET /api/admin/orders
+### GET /api/v1/admin/orders
 Get all orders (Admin only).
 - **Auth**: Admin required
 - **Query**: `page?, limit?, status?, userId?, dateFrom?, dateTo?`
-- **Response**: `{ orders[], pagination }`
+- **Response**: `{ error, message, data: { orders[], pagination } }`
 
-### GET /api/admin/products/inventory
+### GET /api/v1/admin/products/inventory
 Get low stock products (Admin only).
 - **Auth**: Admin required
-- **Response**: `{ products[] }`
+- **Response**: `{ error, message, data: { products[] } }`
 
 ## Common Patterns
 
@@ -260,11 +284,9 @@ Response format:
 All endpoints return consistent error format:
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed",
-    "details": { ... }
-  }
+  "error": true,
+  "message": "Error description",
+  "data": {}
 }
 ```
 
