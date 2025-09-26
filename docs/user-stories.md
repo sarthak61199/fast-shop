@@ -34,12 +34,75 @@ Legend: [x] Completed · [ ] Planned
     - The profile returned is always the authenticated user derived from the verified JWT; query/path params cannot select other users.
     - User details are fetched from the database at request time so recent updates are reflected.
     - Response `Content-Type` is `application/json`.
-9. [ ] As an authenticated user, I can update my profile details (name, email).
-10. [ ] As an authenticated user, I can list my saved addresses.
-11. [ ] As an authenticated user, I can add a new shipping/billing address.
-12. [ ] As an authenticated user, I can update an existing address.
-13. [ ] As an authenticated user, I can delete an address.
-14. [ ] As an authenticated user, I can set an address as my default for shipping/billing.
+9. [x] As an authenticated user, I can update my profile details (name, email).
+  - Acceptance Criteria
+    - Route: `PUT /api/v1/users/profile`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - If the authenticated user does not exist or is inactive, responds `401` with `{ "error": true, "message": "User not found or inactive", "data": {} }`.
+    - Request body accepts only: `{ firstName?, lastName?, email? }`. Extra fields are rejected with `400`.
+    - At least one updatable field must be provided; otherwise respond `400` with a validation error message.
+    - `email`, when provided, must be a valid email format; invalid formats respond `400`.
+    - If `email` is provided and already in use by another user, respond `409` with `{ "error": true, "message": "Email already in use", "data": {} }`.
+    - On success, responds `200` with JSON: `{ "error": false, "message": "Profile updated", "data": { "user": { id, email, firstName, lastName, role, isActive, createdAt, updatedAt } } }`.
+    - The response never includes sensitive fields such as `password` or password hashes.
+    - Only the authenticated user's profile is updated. Supplying identifiers in query/path/body to target other users is ignored or rejected (`403` if attempted explicitly).
+    - Changes are persisted to the database and `updatedAt` reflects the update time; `createdAt` remains unchanged.
+    - Response `Content-Type` is `application/json`.
+10. [x] As an authenticated user, I can list my saved addresses.
+  - Acceptance Criteria
+    - Route: `GET /api/v1/addresses`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - If the authenticated user does not exist or is inactive, responds `401` with `{ "error": true, "message": "User not found or inactive", "data": {} }`.
+    - Returns only the addresses belonging to the authenticated user; query/path parameters cannot request other users' addresses.
+    - On success, responds `200` with JSON: `{ "error": false, "message": "Addresses retrieved", "data": { "addresses": [ { id, type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault, createdAt, updatedAt } ] } }`.
+    - If the user has no addresses, responds `200` with an empty `addresses` array.
+    - Response `Content-Type` is `application/json`.
+11. [x] As an authenticated user, I can add a new shipping/billing address.
+  - Acceptance Criteria
+    - Route: `POST /api/v1/addresses`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - If the authenticated user does not exist or is inactive, responds `401` with `{ "error": true, "message": "User not found or inactive", "data": {} }`.
+    - Request body accepts only:
+      `{ type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault? }`.
+    - `type` must be one of `SHIPPING` or `BILLING`; required string fields must be non-empty.
+    - Extra/unknown fields are rejected with `400` and a validation error message.
+    - If `isDefault` is `true`, the new address is set as default and any existing default address for the same `type` for this user is unset.
+    - On success, responds `201` with JSON:
+      `{ "error": false, "message": "Address created", "data": { "address": { id, type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault, createdAt, updatedAt } } }`.
+    - The address is always created for the authenticated user; attempts to specify a `userId` are ignored or rejected with `403` if explicitly provided.
+    - Response `Content-Type` is `application/json`.
+12. [x] As an authenticated user, I can update an existing address.
+  - Acceptance Criteria
+    - Route: `PUT /api/v1/addresses/:id`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - Only the owner can update their address. If the address does not exist for the authenticated user, respond `404` with `{ "error": true, "message": "Address not found", "data": {} }`.
+    - Request body accepts only: `{ type?, firstName?, lastName?, company?, street?, city?, state?, postalCode?, country?, phone?, isDefault? }`.
+    - At least one updatable field must be provided; otherwise respond `400` with a validation error.
+    - `type`, when provided, must be one of `SHIPPING` or `BILLING`; required string fields (if provided) must be non-empty.
+    - Extra/unknown fields are rejected with `400` and a validation error message.
+    - If `isDefault` is set to `true`, the updated address becomes default and any existing default for the same `type` and user is unset.
+    - If `type` is changed and `isDefault` is `true`, ensure default uniqueness for the new `type`.
+    - On success, responds `200` with JSON:
+      `{ "error": false, "message": "Address updated", "data": { "address": { id, type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault, createdAt, updatedAt } } }`.
+    - Response `Content-Type` is `application/json`.
+13. [x] As an authenticated user, I can delete an address.
+  - Acceptance Criteria
+    - Route: `DELETE /api/v1/addresses/:id`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - Only the owner can delete their address. If the address does not exist for the authenticated user, respond `404` with `{ "error": true, "message": "Address not found", "data": {} }`.
+    - Deleting a default address is allowed; after deletion there may be no default for that `type` until another is set explicitly.
+    - On success, responds `200` with JSON: `{ "error": false, "message": "Address deleted", "data": {} }`.
+    - Response `Content-Type` is `application/json`.
+14. [x] As an authenticated user, I can set an address as my default for shipping/billing.
+  - Acceptance Criteria
+    - Route: `PUT /api/v1/addresses/:id/default`.
+    - Requires `Authorization: Bearer <jwt>` header; missing/invalid/expired token responds `401` with `{ "error": true, "message": "Unauthorized", "data": {} }`.
+    - Only the owner can set default; if the address does not exist for the authenticated user, respond `404` with `{ "error": true, "message": "Address not found", "data": {} }`.
+    - Sets the specified address as default (`isDefault: true`) and unsets any other default address for the same `type` for this user.
+    - Operation is idempotent: if the address is already default for its `type`, respond `200` with the same payload.
+    - On success, responds `200` with JSON:
+      `{ "error": false, "message": "Default address set", "data": { "address": { id, type, firstName, lastName, company?, street, city, state, postalCode, country, phone?, isDefault, createdAt, updatedAt } } }`.
+    - Response `Content-Type` is `application/json`.
 
 ### Product Catalog & Categories
 15. [ ] As a shopper, I can browse products with pagination and filtering.
